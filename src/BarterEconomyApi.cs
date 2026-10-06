@@ -24,10 +24,9 @@ namespace Leaves_BarterEconomy;
 //   GET /bartereconomy/api/trades/sells?item=<tpl> -> who sells this item (barter-chain lookups)
 //   GET /bartereconomy/api/tiers                   -> { "<itemId>": <tier>, ... }   the shared payment tier list
 //
-// /api/tiers is a SOFT dependency: LootFuckery's dump viewer fetches it to annotate items, and just
-// drops the tier columns if this mod isn't present.
+// /api/tiers is a SOFT dependency: LootFuckery's dump viewer fetches it to annotate items, and just drops the tier columns if this mod isn't present.
 [Injectable]
-public class BarterEconomyApi(BarterEconomy barterEconomy, ModHelper modHelper) : IHttpListener, IOnLoad
+public class BarterEconomyApi(BarterEconomy barterEconomy) : IHttpListener, IOnLoad
 {
     private const string Prefix = "/bartereconomy/";
 
@@ -36,12 +35,15 @@ public class BarterEconomyApi(BarterEconomy barterEconomy, ModHelper modHelper) 
     {
         var routes = new List<Leaves.RouteInfo>
         {
-            new Leaves.RouteInfo("GET", "/bartereconomy/ui", "Timers page.", "ui"),
-            new Leaves.RouteInfo("GET", "/bartereconomy/ui/tiers", "Tier-list page.", "ui"),
-            new Leaves.RouteInfo("GET", "/bartereconomy/ui/trades", "Trades page.", "ui"),
-            new Leaves.RouteInfo("GET", "/bartereconomy/ui/search", "Cross-trader Search page.", "ui"),
-            new Leaves.RouteInfo("GET", "/bartereconomy/ui/pinned", "Pinned-barters page (pins live in localStorage).", "ui"),
-            new Leaves.RouteInfo("GET", "/bartereconomy/ui/common.js", "Shared client helpers for Trades + Search + Pinned.", "internal"),
+            // The /bartereconomy/ui* page + asset files are served by the Leaves-WebUI mod now, which
+            // registers them under "Web UI (static files)". Left commented so the move is visible.
+            //   new Leaves.RouteInfo("GET", "/bartereconomy/ui", "Timers page.", "ui"),
+            //   new Leaves.RouteInfo("GET", "/bartereconomy/ui/tiers", "Tier-list page.", "ui"),
+            //   new Leaves.RouteInfo("GET", "/bartereconomy/ui/trades", "Trades page.", "ui"),
+            //   new Leaves.RouteInfo("GET", "/bartereconomy/ui/search", "Cross-trader Search page.", "ui"),
+            //   new Leaves.RouteInfo("GET", "/bartereconomy/ui/pinned", "Pinned-barters page (pins live in localStorage).", "ui"),
+            //   new Leaves.RouteInfo("GET", "/bartereconomy/ui/common.js", "Shared client helpers for Trades + Search + Pinned.", "internal"),
+            //   new Leaves.RouteInfo("GET", "/bartereconomy/ui/nav.json", "Nav-rail manifest for the shared rail.", "internal"),
             new Leaves.RouteInfo("GET", "/bartereconomy/api/status", "Per-trader next-resupply + barter save-load lock window.", "api"),
             new Leaves.RouteInfo("GET", "/bartereconomy/api/traders", "Every trader that has trades (id/nickname/avatar/count/managed).", "api"),
             new Leaves.RouteInfo("GET", "/bartereconomy/api/trades?trader=", "One trader's trades, categorized, with payment schemes.", "api"),
@@ -53,34 +55,45 @@ public class BarterEconomyApi(BarterEconomy barterEconomy, ModHelper modHelper) 
         return Task.CompletedTask;
     }
 
-    // Pages live under assets/ui/ and are read fresh per request (hit rarely) so tweaks show without a rebuild.
-    private readonly string uiDir = System.IO.Path.Combine(
-        modHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly()),
-        "assets", "ui");
+    // The page files (bartereconomy/tiers/trades/search/pinned.html, common.txt, nav.json) moved to the
+    // Leaves-WebUI mod, which serves every Leaves mod's static UI files. This listener is the read-only
+    // JSON API only now. See WEBUI_EXTRACTION_PLAN.md.
+    //   private readonly string uiDir = System.IO.Path.Combine(
+    //       modHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly()), "assets", "ui");
+    //   private const string HtmlType = "text/html; charset=utf-8";
+    //   private sealed record FileRoute(string Path, string File, string ContentType);
+    //   private static readonly List<FileRoute> FileRoutes = new()
+    //   {
+    //       new FileRoute("/bartereconomy/ui",           "bartereconomy.html", HtmlType),
+    //       new FileRoute("/bartereconomy/ui/tiers",     "tiers.html",         HtmlType),
+    //       new FileRoute("/bartereconomy/ui/trades",    "trades.html",        HtmlType),
+    //       new FileRoute("/bartereconomy/ui/search",    "search.html",        HtmlType),
+    //       new FileRoute("/bartereconomy/ui/pinned",    "pinned.html",        HtmlType),
+    //       new FileRoute("/bartereconomy/ui/common.js", "common.txt", "application/javascript; charset=utf-8"),
+    //       new FileRoute("/bartereconomy/ui/nav.json",  "nav.json",   "application/json; charset=utf-8"),
+    //   };
 
-    private const string HtmlType = "text/html; charset=utf-8";
-
-    // Static file serves - exact path -> file under uiDir + content type. Just data; the loop in Handle dispatches them.
-    private sealed record FileRoute(
-        string Path,
-        string File,
-        string ContentType
-    );
-
-    private static readonly List<FileRoute> FileRoutes = new()
+    // Page paths now served by the Leaves-WebUI mod. Excluded here so exactly one listener claims each
+    // (listener dispatch order is not guaranteed). Everything else under /bartereconomy/ is still ours.
+    private static readonly HashSet<string> MovedToWebUiMod = new(StringComparer.OrdinalIgnoreCase)
     {
-        new FileRoute("/bartereconomy/ui",        "bartereconomy.html", HtmlType),
-        new FileRoute("/bartereconomy/ui/tiers",  "tiers.html",         HtmlType),
-        new FileRoute("/bartereconomy/ui/trades", "trades.html",        HtmlType),
-        new FileRoute("/bartereconomy/ui/search", "search.html",        HtmlType),
-        new FileRoute("/bartereconomy/ui/pinned", "pinned.html",        HtmlType),
-        // common.txt, not .js: ModValidator rejects *.js files in a mod folder; the browser only cares about the type.
-        new FileRoute("/bartereconomy/ui/common.js", "common.txt", "application/javascript; charset=utf-8"),
+        "/bartereconomy/ui",
+        "/bartereconomy/ui/tiers",
+        "/bartereconomy/ui/trades",
+        "/bartereconomy/ui/search",
+        "/bartereconomy/ui/pinned",
+        "/bartereconomy/ui/common.js",
+        "/bartereconomy/ui/nav.json",
     };
 
     public bool CanHandle(MongoId sessionId, HttpContext context)
     {
-        return Leaves.HttpUtils.HasPrefix(context, Prefix);
+        if (!Leaves.HttpUtils.HasPrefix(context, Prefix))
+        {
+            return false;
+        }
+        string path = (context.Request.Path.Value ?? "").TrimEnd('/');
+        return !MovedToWebUiMod.Contains(path);
     }
 
     public async Task Handle(MongoId sessionId, HttpContext context)
@@ -90,14 +103,8 @@ public class BarterEconomyApi(BarterEconomy barterEconomy, ModHelper modHelper) 
 
         try
         {
-            foreach (FileRoute route in FileRoutes)
-            {
-                if (Leaves.HttpUtils.IsGet(context, route.Path))
-                {
-                    await Leaves.HttpUtils.ServeFile(context, System.IO.Path.Combine(uiDir, route.File), route.ContentType);
-                    return;
-                }
-            }
+            // The static page/asset serves that were here (a loop over FileRoutes) moved to the
+            // Leaves-WebUI mod; CanHandle already routes those paths elsewhere.
 
             if (Leaves.HttpUtils.IsGetSuffix(context, "/api/status"))
             {
@@ -125,8 +132,8 @@ public class BarterEconomyApi(BarterEconomy barterEconomy, ModHelper modHelper) 
             }
             if (Leaves.HttpUtils.IsGetSuffix(context, "/api/trades/sells"))
             {
-                // ?item=<item tpl>. "Who sells this item?" - powers the barter-chain feature. A junk id
-                // just matches nothing (string compare), so no validation - empty results is a fine answer.
+                // ?item=<item tpl>. "Who sells this item?" - powers the barter-chain feature.
+                // A junk id just matches nothing (string compare), so no validation - empty results is a fine answer.
                 string itemId = context.Request.Query["item"].ToString();
                 BarterEconomy.TradeSearchReport report = barterEconomy.GetTradesSellingItem(itemId, 500);
                 await Leaves.HttpUtils.WriteJson(context, StatusCodes.Status200OK, report);

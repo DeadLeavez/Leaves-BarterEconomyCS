@@ -131,13 +131,14 @@ public record BarterEconomyConfig
     [JsonPropertyName("showItemTiers")]
     public bool ShowItemTiers { get; set; } = true;
 
-    // With showItemTiers on: color the "[T#]" tag by tier rank (yellow through green/teal/blue/purple to red),
-    // spaced by rank not raw value so crowded low tiers stay distinct. Uses rich text, which may not render on name labels.
+    // With showItemTiers on: color the "[T#]" tag by tier rank (yellow through green/teal/blue/purple to red), spaced by rank not raw value so crowded low tiers stay distinct.
+    // Uses rich text, which may not render on name labels.
     [JsonPropertyName("colorItemTiers")]
     public bool ColorItemTiers { get; set; } = true;
 
-    // Also add a "Barter tier: [T#]" line to each item's description. Descriptions render rich text reliably
-    // (name labels may not), so this is the fallback. Independent of showItemTiers.
+    // Also add a "Barter tier: [T#]" line to each item's description.
+    // Descriptions render rich text reliably (name labels may not), so this is the fallback.
+    // Independent of showItemTiers.
     [JsonPropertyName("showItemTiersInDescription")]
     public bool ShowItemTiersInDescription { get; set; } = false;
 }
