@@ -12,6 +12,10 @@ The config file is found in the ``\Leaves-BarterEconomy\config\`` folder.
 
 In classic Leaves™️ style; there is also an ``\Leaves-BarterEconomy\output`` folder that holds usable data like the tiers of items and the complete generation of traders each update. The default settings are tuned to be quite difficult. So if you want an easier experience; go ham on the config.
 
+## Requirements
+- [Leaves-LeavesUtil](https://github.com/DeadLeavez/Leaves-LeavesUtil) ([latest release](https://github.com/DeadLeavez/Leaves-LeavesUtil/releases/latest)) - required.
+- [Leaves-WebUI](https://github.com/DeadLeavez/Leaves-WebUI) - optional, adds the browser pages for this mod.
+
 # Changelog
 ## 1.0.0
 3.8.0 Release
