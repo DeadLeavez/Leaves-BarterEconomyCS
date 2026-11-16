@@ -128,3 +128,6 @@ OLD CONFIGS are compatible (but it will no longer load the mentioned above entri
 
 ## 1.1.8
 - Fix multiple issues with files.
+
+## 2.0.0
+- Updated to SPT 4.0.x (not compatible with 4.1.x).
